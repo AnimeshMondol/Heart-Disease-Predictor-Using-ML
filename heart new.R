@@ -1,0 +1,68 @@
+#this is a topic 
+install.packages("FSelector")
+install.packages("rpart")
+install.packages("caret", dependencies = TRUE)
+install.packages("dplyr")
+install.packages("rpart.plot")
+install.packages("xlsx")
+install.packages("data.tree")
+install.packages("caTools")
+install.packages("e1071")
+library(FSelector)
+library(rpart)
+library(caret)
+library(rpart.plot)
+library(dplyr)
+library(xlsx)
+library(data.tree)
+library(caTools)
+library(e1071)
+
+#Loading the Excel file after setting working directory
+
+setwd("E:\\R")
+add<-"heart.xls"
+df <- read.xlsx(add, sheetName = "Sheet1") 
+
+#Selecting only the meaningful columns for prediction
+
+df <- select(df,target, trestbps, sex, age, cp, chol ) 
+df<-mutate(df,target=factor(target),trestbps= as.numeric(trestbps) ,age= as.numeric(age),cp= as.numeric(cp),chol= as.numeric(chol))
+
+#Splitting into training and testing data
+
+set.seed(110)
+sample = sample.split(df$target, SplitRatio = .80)
+train = subset(df, sample == TRUE)
+test = subset(df, sample == FALSE)
+
+#Training the Decision Tree Classifier
+
+tree <- rpart(target ~.,data = train)
+
+#Predictions
+
+tree.target.predicted <- predict(tree,test,type='class')
+
+#Confusion Matrix for evaluating the model
+
+confusionMatrix(tree.target.predicted,test$target)
+#Visualizing the decision tree
+
+prp(tree)
+
+#Visualizing the 2D decision boundary
+
+test <- test[,c(2,4,1)]
+set = test
+X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.1)
+X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.1)
+grid_set = expand.grid(X1, X2)
+colnames(grid_set) = c('bp', 'age')
+y_grid = tree.target.predicted
+plot(set[, -3], main = 'Decision Tree Classification (Test set)',
+     xlab = 'bp', ylab = 'age',
+     xlim = range(X1), ylim = range(X2))
+
+points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+
